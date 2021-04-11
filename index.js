@@ -47,8 +47,8 @@ app.route('/pedidos').get((req, res) => {
 
 app.route('/pedido/adicionar').post((req, res) => {
     console.log("/pedido/adicionar acionado")
-    let qry = "INSERT INTO pedidos (cliente, sabor, quantidade, tamanho)"
-    qry += ` VALUES ('${req.body.cliente}', '${req.body.sabor}', ${req.body.quantidade}, '${res.body.tamanho}'); `
+    let qry = "INSERT INTO pedidos (cliente, sabor, quantidade, tamanho) "
+    qry += ` VALUES ('${req.body.cliente}', '${req.body.sabor}', ${req.body.quantidade}, '${req.body.tamanho}'); `
     pool.query(qry, (err, dbres) => {
         if (err) {
             res.status(500).send(err)

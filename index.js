@@ -1,8 +1,12 @@
 const express = require('express')
 const config = require('config')
 const pg = require('pg')
-const { response } = require('express')
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || config.get("server.port")
+const uri = process.env.DATABASE_URL || config.get("db.uri");
+const secret = process.env.JWT_SECRET || config.get("jwt.secret")
+
+console.log("SECRET==>", secret);
 
 const app = express()
 app.use(express.json())
@@ -10,7 +14,7 @@ app.use(express.urlencoded({extended:true}))
 
 const listaPedidos = []
 const pool = new pg.Pool ({
-    connectionString: "postgres://zwgrdipbywmvkk:3f1c63b292a130d8047468bf20e54cd285dc4bc7b47530f2317e9b05b3d353f8@ec2-54-164-241-193.compute-1.amazonaws.com:5432/da6ufsvtl3eev7",
+    connectionString: uri,
     ssl: {
         rejectUnauthorized: false
     }
@@ -18,12 +22,21 @@ const pool = new pg.Pool ({
 
 app.route('/reset').get((req, res) => { 
     let qry = "DROP TABLE IF EXISTS pedidos;"
-    qry+= "CREATE TABLE pedidos ("
-    qry+= "cliente char(100),"
-    qry+= "sabor char(50),"
-    qry+= "quantidade int,"
-    qry+= "tamanho char(25)"
-    qry+= ");"
+    qry += "CREATE TABLE pedidos ("
+    qry += "cliente char(100),"
+    qry += "sabor char(50),"
+    qry += "quantidade int,"
+    qry += "tamanho char(25)"
+    qry += ");"
+    qry += "DROP TABLE IF EXISTS usuarios;"
+    qry += "CREATE TABLE usuarios ("
+    qry += "usuario varchar(50),"
+    qry += "senha varchar(255),"
+    qry += "perfil varchar(50),"
+    qry += "nome varchar(100)"
+    qry += ");"
+    qry += "INSERT INTO usuarios (usuario, senha, perfil, nome) ";
+    qry += "VALUES ('admin', '123456', 'ADMIN', 'Bruno Henrique')";
     pool.query(qry, (err, dbres) => {
         if (err) {
             res.status(500).send(err)
@@ -57,6 +70,36 @@ app.route('/pedido/adicionar').post((req, res) => {
         }
     });
 })
+
+app.route('/login').post( (req, res) => {
+    console.log("Request ===> ", req.body);
+    let qry = `SELECT * FROM usuarios WHERE usuario = '${req.body.usuario}' `;
+    qry += ` AND senha = '${req.body.senha}';`;
+    pool.query(qry, (err, dbres) => {
+        if (err) {
+           res.status(500).send(err);
+        } else {
+            console.log("Foram encontrados ", dbres.rowCount, " registros");
+            console.log(dbres.rows);
+            if (dbres.rowCount > 0) {
+                const row = dbres.rows[0];
+                console.log("1ª Linha==>", row);
+                const payload = {
+                    usuario: row.usuario,
+                    perfil: row.perfil,
+                    nome: row.nome,
+                }
+                const token = jwt.sign(payload, secret);
+                console.log("Token => ", token);
+                const objToken = {token};
+                res.status(200).json(objToken);
+            } else {
+                res.status(401).send("Usuário ou senha inválidos");
+            }
+        }
+
+    })
+});
 
 app.listen(port, () => {
     console.log("Iniciando o servidor na porta ", port)

@@ -1,5 +1,13 @@
 {
     "server": {
         "port": 80
+    },
+
+    "db": {
+        "uri": "postgres://zwgrdipbywmvkk:3f1c63b292a130d8047468bf20e54cd285dc4bc7b47530f2317e9b05b3d353f8@ec2-54-164-241-193.compute-1.amazonaws.com:5432/da6ufsvtl3eev7"
+    },
+
+    "jwt": {
+        "secret": "FECAF123456"
     }
 }
